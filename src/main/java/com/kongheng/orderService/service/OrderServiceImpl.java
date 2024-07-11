@@ -1,16 +1,19 @@
 package com.kongheng.orderService.service;
 
 import com.kongheng.orderService.entity.Order;
+import com.kongheng.orderService.exception.CustomException;
 import com.kongheng.orderService.external.client.PaymentService;
 import com.kongheng.orderService.external.client.ProductService;
 import com.kongheng.orderService.external.request.PaymentRequest;
 import com.kongheng.orderService.model.OrderRequest;
+import com.kongheng.orderService.model.OrderResponse;
 import com.kongheng.orderService.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -59,5 +62,21 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         return order.getId();
+    }
+
+    @Override
+    public OrderResponse getOrderDetails(long orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new CustomException(
+                "Order not found for the Id: " + orderId,
+                "NOT_FOUND",
+                400));
+
+        return OrderResponse.builder()
+            .orderId(order.getId())
+            .orderStatus(order.getOrderStatus())
+            .amount(order.getAmount())
+            .orderDate(order.getOrderDate())
+            .build();
     }
 }
