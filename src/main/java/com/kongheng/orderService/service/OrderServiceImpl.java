@@ -5,12 +5,14 @@ import com.kongheng.orderService.exception.CustomException;
 import com.kongheng.orderService.external.client.PaymentService;
 import com.kongheng.orderService.external.client.ProductService;
 import com.kongheng.orderService.external.request.PaymentRequest;
+import com.kongheng.orderService.external.response.ProductResponse;
 import com.kongheng.orderService.model.OrderRequest;
 import com.kongheng.orderService.model.OrderResponse;
 import com.kongheng.orderService.repository.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -27,6 +29,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private PaymentService paymentService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public long placeOrder(OrderRequest request) {
@@ -72,11 +77,26 @@ public class OrderServiceImpl implements OrderService {
                 "NOT_FOUND",
                 400));
 
+        ProductResponse productResponse = restTemplate.getForObject(
+            "http://product-service/product/" + order.getProductId(),
+            ProductResponse.class
+        );
+
+        assert productResponse != null;
+
+        OrderResponse.ProductDetail productDetail = OrderResponse.ProductDetail.builder()
+            .productName(productResponse.getProductName())
+            .productId(productResponse.getProductId())
+            .quantity(order.getQuantity())
+            .price(productResponse.getPrice())
+            .build();
+
         return OrderResponse.builder()
             .orderId(order.getId())
             .orderStatus(order.getOrderStatus())
             .amount(order.getAmount())
             .orderDate(order.getOrderDate())
+            .productDetail(productDetail)
             .build();
     }
 }
