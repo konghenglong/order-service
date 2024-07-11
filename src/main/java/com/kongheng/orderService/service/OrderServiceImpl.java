@@ -5,6 +5,7 @@ import com.kongheng.orderService.exception.CustomException;
 import com.kongheng.orderService.external.client.PaymentService;
 import com.kongheng.orderService.external.client.ProductService;
 import com.kongheng.orderService.external.request.PaymentRequest;
+import com.kongheng.orderService.external.response.PaymentResponse;
 import com.kongheng.orderService.external.response.ProductResponse;
 import com.kongheng.orderService.model.OrderRequest;
 import com.kongheng.orderService.model.OrderResponse;
@@ -82,6 +83,10 @@ public class OrderServiceImpl implements OrderService {
             ProductResponse.class
         );
 
+        PaymentResponse paymentResponse = restTemplate.getForObject(
+            "http://payment-service/payment/order/" + orderId,
+            PaymentResponse.class);
+
         assert productResponse != null;
 
         OrderResponse.ProductDetail productDetail = OrderResponse.ProductDetail.builder()
@@ -91,12 +96,22 @@ public class OrderServiceImpl implements OrderService {
             .price(productResponse.getPrice())
             .build();
 
+        assert paymentResponse != null;
+
+        OrderResponse.PaymentDetail paymentDetail = OrderResponse.PaymentDetail.builder()
+            .paymentId(paymentResponse.getPaymentId())
+            .status(paymentResponse.getStatus())
+            .paymentDate(paymentResponse.getPaymentDate())
+            .paymentMode(paymentResponse.getPaymentMode())
+            .build();
+
         return OrderResponse.builder()
             .orderId(order.getId())
             .orderStatus(order.getOrderStatus())
             .amount(order.getAmount())
             .orderDate(order.getOrderDate())
             .productDetail(productDetail)
+            .paymentDetail(paymentDetail)
             .build();
     }
 }
